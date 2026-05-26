@@ -15,7 +15,7 @@ I bridge the gap between High-Performance Tech Architecture and Full-Funnel Grow
 
 ## 📊 Live System Architectures & Production Breakdowns
 
-### 1. Multi-Agent Autonomous Pipeline for Geo-Targeted User Acquisition (UA)
+### 1. Vibe Coding
 
 - **Vibe Coding Implementation:** - Leveraged **Manus** and **Claude** to build custom financial indicators and backtesting logic via **Pine Script (TradingView)** to sync technical trading signals into external logic.
   - Developed and configured a live **Telegram Bot** as the central event-driven notification hub for real-time workflow telemetry.
