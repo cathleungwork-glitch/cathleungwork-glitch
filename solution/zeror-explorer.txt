@@ -1,0 +1,45 @@
+=== Run information ===
+
+Scheme:       weka.classifiers.rules.ZeroR 
+Relation:     productivity
+Instances:    1197
+Attributes:   6
+              team
+              smv
+              over_time
+              incentive
+              no_of_workers
+              productivity
+Test mode:    10-fold cross-validation
+
+=== Classifier model (full training set) ===
+
+ZeroR predicts class value: 1
+
+Time taken to build model: 0.01 seconds
+
+=== Stratified cross-validation ===
+=== Summary ===
+
+Correctly Classified Instances         875               73.0994 %
+Incorrectly Classified Instances       322               26.9006 %
+Kappa statistic                          0     
+Mean absolute error                      0.3935
+Root mean squared error                  0.4434
+Relative absolute error                100      %
+Root relative squared error            100      %
+Total Number of Instances             1197     
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.000    0.000    ?          0.000    ?          ?        0.496     0.267     0
+                 1.000    1.000    0.731      1.000    0.845      ?        0.496     0.729     1
+Weighted Avg.    0.731    0.731    ?          0.731    ?          ?        0.496     0.605     
+
+=== Confusion Matrix ===
+
+   a   b   <-- classified as
+   0 322 |   a = 0
+   0 875 |   b = 1
+

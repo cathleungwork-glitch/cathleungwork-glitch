@@ -1,0 +1,93 @@
+\subsection*{Training distribution}
+The training set has 18 instances. Class counts: HC 7, Infected 3, Asthma 5, COPD 3.
+\subsection*{Root}
+
+Records 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ($n=18$). Class counts: HC 7, Infected 3, Asthma 5, COPD 3.
+\[ H = -\left(\frac{7}{18}\log_2\frac{7}{18}+\frac{3}{18}\log_2\frac{3}{18}+\frac{5}{18}\log_2\frac{5}{18}+\frac{3}{18}\log_2\frac{3}{18}\right) = 1.904875. \]
+Every binary split is evaluated below. For a numeric attribute the threshold is the midpoint between successive distinct values, which puts every instance of one value entirely on one side. For nominal Smoking, each binary split is one partition of the values that actually occur in the node.
+
+\begin{center}
+\scriptsize
+\begin{tabular}{lrrrrrrr}
+\toprule
+Split & $|L|$ & $L$ counts & $H(L)$ & $|R|$ & $R$ counts & $H(R)$ & Gain \\
+\midrule
+Smoking $\in$ {1,3} vs Smoking $\in$ {2} & 11 & 6, 2, 1, 2 & 1.685816 & 7 & 1, 1, 4, 1 & 1.664498 &  \textbf{0.227350} \\
+Age $\le$ 59.5 vs Age $>$ 59.5 & 3 & 2, 1, 0, 0 & 0.918296 & 15 & 5, 2, 5, 3 & 1.908613 & 0.161315 \\
+Smoking $\in$ {1,2} vs Smoking $\in$ {3} & 14 & 5, 2, 5, 2 & 1.863121 & 4 & 2, 1, 0, 1 & 1.500000 & 0.122448 \\
+Age $\le$ 62.5 vs Age $>$ 62.5 & 12 & 6, 2, 3, 1 & 1.729574 & 6 & 1, 1, 2, 2 & 1.918296 & 0.112394 \\
+Age $\le$ 58.5 vs Age $>$ 58.5 & 1 & 1, 0, 0, 0 & 0.000000 & 17 & 6, 3, 5, 3 & 1.932805 & 0.079448 \\
+Smoking $\in$ {1} vs Smoking $\in$ {2,3} & 7 & 4, 1, 1, 1 & 1.664498 & 11 & 3, 2, 4, 2 & 1.936260 & 0.074300 \\
+Age $\le$ 61.5 vs Age $>$ 61.5 & 9 & 4, 1, 3, 1 & 1.752715 & 9 & 3, 2, 2, 2 & 1.974938 & 0.041049 \\
+Age $\le$ 60.5 vs Age $>$ 60.5 & 6 & 3, 1, 1, 1 & 1.792481 & 12 & 4, 2, 4, 2 & 1.918296 & 0.028517 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Counts are ordered (HC, Infected, Asthma, COPD). The largest gain is in bold.
+
+The best gain is 0.227350, which is at least $0.15$, and the node has at least 8 instances, so the node is split on Smoking $\in$ {1,3} vs Smoking $\in$ {2}.
+\[ \mathrm{Gain} = H - \frac{11}{18}H(L) - \frac{7}{18}H(R) = 0.227350. \]
+This gain is computed from the unrounded entropies and is the value compared with $0.15$. The entropies in the table are those same quantities rounded to 6 decimal places.
+
+\subsection*{Left child: Smoking $\in \{1,3\}$}
+
+Records 1, 2, 3, 4, 7, 10, 11, 12, 13, 17, 18 ($n=11$). Class counts: HC 6, Infected 2, Asthma 1, COPD 2.
+\[ H = -\left(\frac{6}{11}\log_2\frac{6}{11}+\frac{2}{11}\log_2\frac{2}{11}+\frac{1}{11}\log_2\frac{1}{11}+\frac{2}{11}\log_2\frac{2}{11}\right) = 1.685816. \]
+Every binary split is evaluated below. For a numeric attribute the threshold is the midpoint between successive distinct values, which puts every instance of one value entirely on one side. For nominal Smoking, each binary split is one partition of the values that actually occur in the node.
+
+\begin{center}
+\scriptsize
+\begin{tabular}{lrrrrrrr}
+\toprule
+Split & $|L|$ & $L$ counts & $H(L)$ & $|R|$ & $R$ counts & $H(R)$ & Gain \\
+\midrule
+Age $\le$ 62.5 vs Age $>$ 62.5 & 8 & 5, 2, 1, 0 & 1.298795 & 3 & 1, 0, 0, 2 & 0.918296 &  \textbf{0.490793} \\
+Age $\le$ 61.5 vs Age $>$ 61.5 & 5 & 3, 1, 1, 0 & 1.370951 & 6 & 3, 1, 0, 2 & 1.459148 & 0.266757 \\
+Age $\le$ 60.5 vs Age $>$ 60.5 & 4 & 2, 1, 1, 0 & 1.500000 & 7 & 4, 1, 0, 2 & 1.378783 & 0.262953 \\
+Age $\le$ 59.5 vs Age $>$ 59.5 & 3 & 2, 1, 0, 0 & 0.918296 & 8 & 4, 1, 1, 2 & 1.750000 & 0.162644 \\
+Age $\le$ 58.5 vs Age $>$ 58.5 & 1 & 1, 0, 0, 0 & 0.000000 & 10 & 5, 2, 1, 2 & 1.760964 & 0.084939 \\
+Smoking $\in$ {1} vs Smoking $\in$ {3} & 7 & 4, 1, 1, 1 & 1.664498 & 4 & 2, 1, 0, 1 & 1.500000 & 0.081135 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Counts are ordered (HC, Infected, Asthma, COPD). The largest gain is in bold.
+
+The best gain is 0.490793, which is at least $0.15$, and the node has at least 8 instances, so the node is split on Age $\le$ 62.5 vs Age $>$ 62.5.
+\[ \mathrm{Gain} = H - \frac{8}{11}H(L) - \frac{3}{11}H(R) = 0.490793. \]
+This gain is computed from the unrounded entropies and is the value compared with $0.15$. The entropies in the table are those same quantities rounded to 6 decimal places.
+
+\subsection*{Left-left child: Smoking $\in \{1,3\}$ and Age $\le 62.5$}
+
+Records 1, 2, 3, 4, 7, 10, 11, 12 ($n=8$). Class counts: HC 5, Infected 2, Asthma 1.
+\[ H = -\left(\frac{5}{8}\log_2\frac{5}{8}+\frac{2}{8}\log_2\frac{2}{8}+\frac{1}{8}\log_2\frac{1}{8}\right) = 1.298795. \]
+Every binary split is evaluated below. For a numeric attribute the threshold is the midpoint between successive distinct values, which puts every instance of one value entirely on one side. For nominal Smoking, each binary split is one partition of the values that actually occur in the node.
+
+\begin{center}
+\scriptsize
+\begin{tabular}{lrrrrrrr}
+\toprule
+Split & $|L|$ & $L$ counts & $H(L)$ & $|R|$ & $R$ counts & $H(R)$ & Gain \\
+\midrule
+Age $\le$ 60.5 vs Age $>$ 60.5 & 4 & 2, 1, 1, 0 & 1.500000 & 4 & 3, 1, 0, 0 & 0.811278 & \textbf{0.143156} \\
+Smoking $\in$ {1} vs Smoking $\in$ {3} & 6 & 4, 1, 1, 0 & 1.251629 & 2 & 1, 1, 0, 0 & 1.000000 & 0.110073 \\
+Age $\le$ 59.5 vs Age $>$ 59.5 & 3 & 2, 1, 0, 0 & 0.918296 & 5 & 3, 1, 1, 0 & 1.370951 & 0.097590 \\
+Age $\le$ 61.5 vs Age $>$ 61.5 & 5 & 3, 1, 1, 0 & 1.370951 & 3 & 2, 1, 0, 0 & 0.918296 & 0.097590 \\
+Age $\le$ 58.5 vs Age $>$ 58.5 & 1 & 1, 0, 0, 0 & 0.000000 & 7 & 4, 2, 1, 0 & 1.378783 & 0.092359 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Counts are ordered (HC, Infected, Asthma, COPD). The largest gain is in bold.
+
+The best gain is 0.143156, which is less than $0.15$. Pre-pruning stops the split. The leaf label is the majority class HC.
+
+\subsection*{Left-right child: Smoking $\in \{1,3\}$ and Age $> 62.5$}
+
+Records 13, 17, 18 ($n=3$). Class counts: HC 1, COPD 2.
+\[ H = -\left(\frac{1}{3}\log_2\frac{1}{3}+\frac{2}{3}\log_2\frac{2}{3}\right) = 0.918296. \]
+This node has $n=3<8$, so it is not split. The leaf label is the majority class COPD.
+
+\subsection*{Right child: Smoking $= 2$}
+
+Records 5, 6, 8, 9, 14, 15, 16 ($n=7$). Class counts: HC 1, Infected 1, Asthma 4, COPD 1.
+\[ H = -\left(\frac{1}{7}\log_2\frac{1}{7}+\frac{1}{7}\log_2\frac{1}{7}+\frac{4}{7}\log_2\frac{4}{7}+\frac{1}{7}\log_2\frac{1}{7}\right) = 1.664498. \]
+This node has $n=7<8$, so it is not split. The leaf label is the majority class Asthma.
