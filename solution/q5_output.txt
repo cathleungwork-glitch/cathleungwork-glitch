@@ -1,0 +1,71 @@
+===== Step 1 output =====
+Preview of the first 3 rows of the new dataset:
+   Length  Diameter  Height  Whole weight  Mature
+0   0.455     0.365   0.095        0.5140       1
+1   0.350     0.265   0.090        0.2255       0
+2   0.530     0.420   0.135        0.6770       1
+Number of rows: 4177
+Number of columns: 5
+
+===== Step 2 and Step 3 output =====
+Training set size: 3341
+Testing set size: 836
+Split ratio (train:test) = 3341:836
+Best parameters: {'criterion': 'gini', 'max_depth': 4}
+Best cross-validated F1-score (Mature = 1): 0.8729
+
+===== Step 4 output =====
+Decision tree parameters: {'criterion': 'gini', 'max_depth': 4}
+Decision tree (text):
+|--- Height <= 0.1225
+|   |--- Height <= 0.1025
+|   |   |--- Whole weight <= 0.1517
+|   |   |   |--- Whole weight <= 0.1237
+|   |   |   |   |--- class: 0
+|   |   |   |--- Whole weight >  0.1237
+|   |   |   |   |--- class: 0
+|   |   |--- Whole weight >  0.1517
+|   |   |   |--- Diameter <= 0.3825
+|   |   |   |   |--- class: 0
+|   |   |   |--- Diameter >  0.3825
+|   |   |   |   |--- class: 1
+|   |--- Height >  0.1025
+|   |   |--- Whole weight <= 0.6090
+|   |   |   |--- Whole weight <= 0.5948
+|   |   |   |   |--- class: 0
+|   |   |   |--- Whole weight >  0.5948
+|   |   |   |   |--- class: 0
+|   |   |--- Whole weight >  0.6090
+|   |   |   |--- Diameter <= 0.3825
+|   |   |   |   |--- class: 0
+|   |   |   |--- Diameter >  0.3825
+|   |   |   |   |--- class: 1
+|--- Height >  0.1225
+|   |--- Height <= 0.1525
+|   |   |--- Whole weight <= 0.7945
+|   |   |   |--- Diameter <= 0.2925
+|   |   |   |   |--- class: 0
+|   |   |   |--- Diameter >  0.2925
+|   |   |   |   |--- class: 1
+|   |   |--- Whole weight >  0.7945
+|   |   |   |--- Diameter <= 0.3775
+|   |   |   |   |--- class: 0
+|   |   |   |--- Diameter >  0.3775
+|   |   |   |   |--- class: 1
+|   |--- Height >  0.1525
+|   |   |--- Length <= 0.4975
+|   |   |   |--- Diameter <= 0.4175
+|   |   |   |   |--- class: 1
+|   |   |   |--- Diameter >  0.4175
+|   |   |   |   |--- class: 0
+|   |   |--- Length >  0.4975
+|   |   |   |--- Diameter <= 0.4825
+|   |   |   |   |--- class: 1
+|   |   |   |--- Diameter >  0.4825
+|   |   |   |   |--- class: 1
+
+===== Step 5 output =====
+Accuracy: 0.8301
+Precision (Mature = 1): 0.8487
+Recall (Mature = 1): 0.9066
+F1-score (Mature = 1): 0.8767
