@@ -1,0 +1,20 @@
+\subsection*{Gain ratio of the multi-way Smoking split}
+
+This calculation is separate from the tree. It uses one branch for each value of Smoking on the full training set.
+The parent entropy is the root entropy above, $H(D)=1.904875$.
+Smoking $= 1$ ($n=7$): HC 4, Infected 1, Asthma 1, COPD 1.
+
+\[ H = -\left(\frac{4}{7}\log_2\frac{4}{7}+\frac{1}{7}\log_2\frac{1}{7}+\frac{1}{7}\log_2\frac{1}{7}+\frac{1}{7}\log_2\frac{1}{7}\right) = 1.664498. \]
+
+Smoking $= 2$ ($n=7$): HC 1, Infected 1, Asthma 4, COPD 1.
+
+\[ H = -\left(\frac{1}{7}\log_2\frac{1}{7}+\frac{1}{7}\log_2\frac{1}{7}+\frac{4}{7}\log_2\frac{4}{7}+\frac{1}{7}\log_2\frac{1}{7}\right) = 1.664498. \]
+
+Smoking $= 3$ ($n=4$): HC 2, Infected 1, COPD 1.
+
+\[ H = -\left(\frac{2}{4}\log_2\frac{2}{4}+\frac{1}{4}\log_2\frac{1}{4}+\frac{1}{4}\log_2\frac{1}{4}\right) = 1.500000. \]
+
+\[ \mathrm{Remainder} = \frac{7}{18}\times 1.664498 + \frac{7}{18}\times 1.664498 + \frac{4}{18}\times 1.500000 = 1.627943. \]
+\[ \mathrm{Gain} = 1.904875 - 1.627943 = 0.276932. \]
+\[ \mathrm{SplitInfo} = -\left(\frac{7}{18}\log_2\frac{7}{18}+\frac{7}{18}\log_2\frac{7}{18}+\frac{4}{18}\log_2\frac{4}{18}\right) = 1.541982. \]
+\[ \mathrm{GainRatio} = \frac{0.276932}{1.541982} = 0.179595. \]

@@ -1,0 +1,77 @@
+=== Run information ===
+
+Scheme:       weka.classifiers.meta.CVParameterSelection -P "C 0.05 0.5 16.0" -X 10 -S 1 -W weka.classifiers.trees.J48 -- -C 0.25 -M 2
+Relation:     productivity
+Instances:    1197
+Attributes:   6
+              team
+              smv
+              over_time
+              incentive
+              no_of_workers
+              productivity
+Test mode:    10-fold cross-validation
+
+=== Classifier model (full training set) ===
+
+Cross-validated Parameter selection.
+Classifier: weka.classifiers.trees.J48
+Cross-validation Parameter: '-C' ranged from 0.05 to 0.5 with 16.0 steps
+Classifier Options: -C 0.14 -M 2
+
+J48 pruned tree
+------------------
+
+smv <= 3.9
+|   no_of_workers <= 8: 0 (101.0/19.0)
+|   no_of_workers > 8: 1 (27.0/7.0)
+smv > 3.9
+|   incentive <= 21
+|   |   smv <= 4.6
+|   |   |   no_of_workers <= 9
+|   |   |   |   over_time <= 3000: 1 (177.0/56.0)
+|   |   |   |   over_time > 3000: 0 (20.0/5.0)
+|   |   |   no_of_workers > 9: 1 (150.0/28.0)
+|   |   smv > 4.6: 0 (135.0/50.0)
+|   incentive > 21
+|   |   smv <= 29.4: 1 (512.0/27.0)
+|   |   smv > 29.4
+|   |   |   smv <= 30.48: 1 (60.0/10.0)
+|   |   |   smv > 30.48
+|   |   |   |   incentive <= 46: 0 (10.0)
+|   |   |   |   incentive > 46
+|   |   |   |   |   over_time <= 9900: 0 (2.0)
+|   |   |   |   |   over_time > 9900: 1 (3.0)
+
+Number of Leaves  : 	11
+
+Size of the tree : 	21
+
+
+Time taken to build model: 0.57 seconds
+
+=== Stratified cross-validation ===
+=== Summary ===
+
+Correctly Classified Instances         964               80.5347 %
+Incorrectly Classified Instances       233               19.4653 %
+Kappa statistic                          0.4822
+Mean absolute error                      0.2675
+Root mean squared error                  0.3777
+Relative absolute error                 67.9948 %
+Root relative squared error             85.1774 %
+Total Number of Instances             1197     
+
+=== Detailed Accuracy By Class ===
+
+                 TP Rate  FP Rate  Precision  Recall   F-Measure  MCC      ROC Area  PRC Area  Class
+                 0.568    0.107    0.661      0.568    0.611      0.485    0.818     0.607     0
+                 0.893    0.432    0.849      0.893    0.870      0.485    0.818     0.904     1
+Weighted Avg.    0.805    0.344    0.798      0.805    0.800      0.485    0.818     0.824     
+
+=== Confusion Matrix ===
+
+   a   b   <-- classified as
+ 183 139 |   a = 0
+  94 781 |   b = 1
+
