@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from datetime import date, datetime, timedelta
@@ -281,20 +282,53 @@ class FontTests(unittest.TestCase):
 
 class RenderTests(unittest.TestCase):
     def test_one_reel_and_one_carousel_page(self) -> None:
+        commands: list[list[str]] = []
+        real_run = subprocess.run
+
+        def spy(cmd, **kwargs):
+            if isinstance(cmd, list):
+                commands.append([str(part) for part in cmd])
+            return real_run(cmd, **kwargs)
+
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
-            render_reel(
-                ["出糧 8 秒，錢行咗", "出糧嗰晚，先轉走"],
-                None,
-                folder / "reel.mp4",
-                6,
-                True,
-                "出糧 8 秒，錢行咗",
-            )
+            with patch("ig_pipeline.render.subprocess.run", spy):
+                render_reel(
+                    ["出糧 8 秒，錢行咗", "出糧嗰晚，先轉走"],
+                    None,
+                    folder / "reel.mp4",
+                    6,
+                    True,
+                    "出糧 8 秒，錢行咗",
+                )
             render_carousel(["回贈未計年費，就唔算賺到"], folder)
             reel = folder / "reel.mp4"
             image = folder / "page-01.jpg"
             self.assertGreater(reel.stat().st_size, 10_000)
+            self.assertTrue(commands)
+            for cmd in commands:
+                self.assertNotIn("drawtext", " ".join(cmd))
+                self.assertNotIn("-vf", cmd)
+            probe = json.loads(
+                subprocess.check_output(
+                    [
+                        "ffprobe",
+                        "-v",
+                        "error",
+                        "-select_streams",
+                        "v:0",
+                        "-show_entries",
+                        "stream=width,height,codec_name",
+                        "-of",
+                        "json",
+                        str(reel),
+                    ],
+                    text=True,
+                )
+            )
+            stream = probe["streams"][0]
+            self.assertEqual(stream["codec_name"], "h264")
+            self.assertEqual((stream["width"], stream["height"]), (1080, 1920))
             from PIL import Image
 
             with Image.open(image) as opened:

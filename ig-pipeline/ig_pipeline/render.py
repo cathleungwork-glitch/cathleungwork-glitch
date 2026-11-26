@@ -1,4 +1,4 @@
-"""Text-card Reels via ffmpeg, carousel JPEGs via Pillow. No stock footage."""
+"""Text-card Reels and carousel JPEGs drawn with Pillow. ffmpeg only encodes, joins, and muxes."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from ig_pipeline.textfit import fit_text, font_path, load_font
+from ig_pipeline.textfit import fit_text, load_font
 
 REEL_W, REEL_H = 1080, 1920
 REEL_SAFE_TOP = 220
@@ -82,23 +82,11 @@ def render_carousel(pages: list[str], out_dir: Path) -> list[Path]:
 
 
 def _render_card(tmp: Path, index: int, text: str, duration: float) -> Path:
-    max_width = REEL_W - 2 * REEL_SAFE_X
-    max_height = REEL_H - REEL_SAFE_TOP - REEL_SAFE_BOTTOM
-    size, lines, line_height = fit_text(text, max_width, max_height)
-    block = line_height * len(lines)
-    safe_height = REEL_H - REEL_SAFE_TOP - REEL_SAFE_BOTTOM
-    top = REEL_SAFE_TOP + max(0, (safe_height - block) // 2)
-    text_file = tmp / f"card-{index:02}.txt"
-    text_file.write_text("\n".join(lines), encoding="utf-8")
+    image_path = tmp / f"card-{index:02}.png"
+    _paint_reel_card(text, image_path)
     video = tmp / f"card-{index:02}.mp4"
-    vf = (
-        "drawtext="
-        f"fontfile={_ff_path(font_path())}:"
-        f"textfile={_ff_path(text_file)}:"
-        f"fontsize={size}:fontcolor=white:expansion=none:"
-        f"line_spacing={max(14, size // 5)}:text_align=center:"
-        f"x=(w-text_w)/2:y={top}"
-    )
+    frames = max(1, round(duration * FPS))
+    # Encode the still. No -vf, so a default Homebrew ffmpeg without drawtext works.
     _run(
         [
             "ffmpeg",
@@ -106,12 +94,14 @@ def _render_card(tmp: Path, index: int, text: str, duration: float) -> Path:
             "-hide_banner",
             "-loglevel",
             "error",
-            "-f",
-            "lavfi",
+            "-loop",
+            "1",
+            "-framerate",
+            str(FPS),
             "-i",
-            f"color=c=black:s={REEL_W}x{REEL_H}:r={FPS}:d={duration:.3f}",
-            "-vf",
-            vf,
+            str(image_path),
+            "-frames:v",
+            str(frames),
             "-c:v",
             "libx264",
             "-pix_fmt",
@@ -120,13 +110,28 @@ def _render_card(tmp: Path, index: int, text: str, duration: float) -> Path:
             "veryfast",
             "-crf",
             "20",
-            "-r",
-            str(FPS),
             "-an",
             str(video),
         ]
     )
     return video
+
+
+def _paint_reel_card(text: str, path: Path) -> None:
+    image = Image.new("RGB", (REEL_W, REEL_H), "black")
+    draw = ImageDraw.Draw(image)
+    max_width = REEL_W - 2 * REEL_SAFE_X
+    max_height = REEL_H - REEL_SAFE_TOP - REEL_SAFE_BOTTOM
+    size, lines, line_height = fit_text(text, max_width, max_height)
+    font = load_font(size)
+    block = line_height * len(lines)
+    top = REEL_SAFE_TOP + max(0, (max_height - block) // 2)
+    for line_index, line in enumerate(lines):
+        width = font.getlength(line)
+        x = (REEL_W - width) / 2
+        y = top + line_index * line_height
+        draw.text((x, y), line, font=font, fill="white")
+    image.save(path, format="PNG")
 
 
 def _render_page(text: str, path: Path, index: int, total: int) -> None:
@@ -276,10 +281,6 @@ def _duration(path: Path) -> float:
         text=True,
     )
     return float(out.strip())
-
-
-def _ff_path(path: Path | str) -> str:
-    return str(path).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
 
 
 def _run(cmd: list[str]) -> None:
