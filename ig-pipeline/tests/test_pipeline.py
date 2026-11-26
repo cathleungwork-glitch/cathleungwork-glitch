@@ -54,45 +54,46 @@ class PlaybookTests(unittest.TestCase):
         self.assertIn("呢個係機制，唔係時機。", day.spoken)
         self.assertIn("以比特幣做例子", day.spoken)
 
+    def test_hooks_stay_short(self) -> None:
+        for post in self.posts:
+            compact = "".join(post.hook.split())
+            self.assertLessEqual(len(compact), 12, post.hook)
+
     def test_cards(self) -> None:
         by_day = {post.day: post.cards for post in self.posts if post.kind == "reel"}
         self.assertEqual(
             by_day[1],
             [
-                "出糧 8 秒，錢行咗",
-                "第一筆：租或者家用",
-                "第二筆：車錢同午饭，當佢冇",
-                "第三筆：你話要儲嘅",
-                "排最後，所以輪唔到",
-                "出糧嗰晚，先轉走",
-                "轉幾多都得，轉咗先算",
-                "傳俾出糧日先記得儲錢嗰個同事。",
+                "出糧同扣數一戶",
+                "唔轉走第二日當使",
+                "午饭六十蚊係例子",
+                "二十二日約一千三",
+                "出糧嗰晚轉第二戶",
             ],
         )
         self.assertEqual(
             by_day[4],
             [
-                "保費唔等於你有保障",
-                "保費",
-                "不保",
-                "自己讀完先簽名",
-                "傳俾準備簽名嗰個朋友，叫佢先搵「不保」。",
+                "交保費唔等於保",
+                "保費係你付嘅錢",
+                "不保先至係唔賠",
+                "搜不保，讀第一段",
+                "簽名前搜不保",
             ],
         )
-        self.assertEqual(by_day[4][0], "保費唔等於你有保障")
-        self.assertNotIn("保費一行", by_day[4])
-        self.assertEqual(by_day[12][0], "月月話儲，月月儲唔到")
-        self.assertNotIn("冇。", by_day[12])
-        self.assertEqual(by_day[2][0], "收據唔好逐項打")
-        self.assertIn("拆三行", by_day[2])
+        self.assertEqual(by_day[8][1], "例子：單一千還五十")
+        self.assertIn("九百五十", " ".join(by_day[8]))
+        self.assertEqual(by_day[12][0], "月尾先儲就遲")
+        self.assertEqual(by_day[2][0], "收據總數你對")
+        self.assertIn("對到總數先貼", by_day[2])
 
     def test_day_eleven_cover_stays_eight_pages(self) -> None:
         day = self.posts[10]
-        self.assertEqual(day.hook, "三個桶，唔係一個比例")
+        self.assertEqual(day.hook, "出糧只動兩桶")
         self.assertEqual(len(day.pages), 8)
         self.assertEqual(day.pages[0], day.hook)
-        self.assertEqual(day.point, "三個桶，唔係叫你跟某個比例")
-        self.assertEqual(day.pages[1], "第一桶：一定要交。租、家用、車錢")
+        self.assertEqual(day.point, "第三桶未寫低每年費用之前，留喺現金")
+        self.assertEqual(day.pages[1], "第一桶一定要交：租、家用、車錢。出糧嗰晚先留夠")
 
     def test_captions(self) -> None:
         tag_lines = []
