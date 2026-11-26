@@ -1,0 +1,98 @@
+{
+  "asof": "2026-11-25",
+  "fx_sgd_per_usd": 1.2893500328063965,
+  "nav_sgd": 1000000.0,
+  "relaxed": false,
+  "band": [
+    0.97,
+    1.06
+  ],
+  "max_stress_loss": 0.08,
+  "n_eligible": 16,
+  "sleeve_budget": 0.15,
+  "target_gross": 0.6,
+  "cost_one_way": 0.0005,
+  "weights": {
+    "TECH": 0.024999999999999998,
+    "ABBV": 0.024999999999999998,
+    "QGEN": 0.024999999999999998,
+    "RMD": 0.024999999999999998,
+    "A": 0.024999999999999998,
+    "DXCM": 0.024999999999999998,
+    "BOXX": 0.44999999999999996
+  },
+  "shares": {
+    "TECH": 266,
+    "ABBV": 65,
+    "QGEN": 391,
+    "RMD": 78,
+    "A": 108,
+    "DXCM": 228,
+    "BOXX": 2934
+  },
+  "position_ratio": 0.6000578749807018,
+  "spy_stress_drawdown": -0.08008062290343199,
+  "chosen_joint_selloff_return": 0.0810564467431596,
+  "chosen_joint_selloff_drawdown": -0.039476103466715484,
+  "boxx_selloff_return": 0.009398023915125453,
+  "risk_budget_nav": 0.012,
+  "backtest": {
+    "full": {
+      "sharpe": 1.5040844302626328,
+      "return": 0.10096777313694605,
+      "max_drawdown": -0.028943171745497764,
+      "sessions": 624,
+      "positive_weeks": 0.5384615384615384
+    },
+    "before_selloff": {
+      "sharpe": 1.207386762714392,
+      "return": 0.07249152470388043,
+      "max_drawdown": -0.028943171745497764,
+      "sessions": 563
+    },
+    "selloff": {
+      "sharpe": 4.499572035007361,
+      "return": 0.026551490410078094,
+      "max_drawdown": -0.007963420090002393,
+      "sessions": 61
+    },
+    "contest": {
+      "sharpe": 4.207417098090384,
+      "return": 0.010946901660743524,
+      "max_drawdown": -0.007963420090002393,
+      "sessions": 23
+    }
+  },
+  "spy": {
+    "sharpe": 0.8915968449484954,
+    "return": 0.3979945163206726,
+    "max_drawdown": -0.18755225912218998,
+    "sessions": 623
+  },
+  "xlv": {
+    "sharpe": 0.7800547754185694,
+    "return": 0.3236238389367794,
+    "max_drawdown": -0.17108983203516503,
+    "sessions": 623
+  },
+  "anchored_selloff": {
+    "sharpe": 1.7866441726710915,
+    "return": 0.01143309677448201,
+    "max_drawdown": -0.01044357803042728,
+    "sessions": 61
+  },
+  "held_into_contest": "MDT,DGX,LH,TECH,AMGN,GILD",
+  "held_on_signal_trailing": "DXCM,A,TECH,QGEN,RMD,ABBV",
+  "held_on_signal_anchored": "DXCM,A,TECH,QGEN,RMD,ABBV",
+  "pure_least_drawdown": [
+    "TECH",
+    "ABBV",
+    "QGEN",
+    "RMD",
+    "A",
+    "JNJ"
+  ],
+  "ai_in_book": [
+    "DXCM"
+  ]
+}
