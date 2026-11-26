@@ -20,7 +20,13 @@ from ig_pipeline.voice import VOICE_NAME, synthesize_all
 PIPELINE_ROOT = Path(__file__).resolve().parent.parent
 
 
-def generate(start: date, output: Path | None, voice: str, force: bool) -> int:
+def generate(
+    start: date,
+    output: Path | None,
+    voice: str,
+    force: bool,
+    limit: int | None = None,
+) -> int:
     posts, checks = load_playbook()
     issues: list[str] = []
     for post in posts:
@@ -29,6 +35,11 @@ def generate(start: date, output: Path | None, voice: str, force: bool) -> int:
         print("The script file failed the niche check:")
         print("\n".join(issues))
         return 1
+    if limit is not None:
+        if limit < 1 or limit > len(posts):
+            print(f"--limit must be from 1 to {len(posts)}. Omit it to write all {len(posts)}.")
+            return 1
+        posts = posts[:limit]
 
     folder = output or (PIPELINE_ROOT / "output" / start.isoformat())
     folder.mkdir(parents=True, exist_ok=True)
@@ -101,6 +112,8 @@ def generate(start: date, output: Path | None, voice: str, force: bool) -> int:
         "content_sha256": hashlib.sha256(CONTENT_PATH.read_bytes()).hexdigest(),
         "monthly_generation_cost_hkd": 0,
         "listen_before_posting": True,
+        "post_count": len(records),
+        "limit": limit,
         "voice": {
             "engine": result.engine,
             "name": result.voice,
@@ -203,10 +216,14 @@ def verify_output(manifest_path: Path) -> list[str]:
                 path = root / relative
                 problems.extend(_check_jpeg(path))
                 images += 1
-    if reels != 10:
-        problems.append(f"expected 10 reels, found {reels}")
-    if images < 28:
-        problems.append(f"expected at least 28 carousel images, found {images}")
+    # A full queue is 10 reels and 4 carousels. A --limit run is only the days it wrote.
+    if len(data["posts"]) == 14:
+        if reels != 10:
+            problems.append(f"expected 10 reels, found {reels}")
+        if images < 28:
+            problems.append(f"expected at least 28 carousel images, found {images}")
+    elif reels + sum(1 for post in data["posts"] if post["kind"] != "reel") != len(data["posts"]):
+        problems.append(f"schedule lists {len(data['posts'])} posts")
     return problems
 
 
@@ -294,7 +311,7 @@ def _probe(path: Path) -> dict:
 def _print_summary(folder: Path, manifest: dict) -> None:
     voice = manifest["voice"]
     print("")
-    print(f"Generated 14 posts in {folder}")
+    print(f"Generated {len(manifest['posts'])} posts in {folder}")
     print(f"Voice: {voice['engine']} {voice['name']}")
     print("Monthly generation cost: HK$0")
     if voice["fallback"]:

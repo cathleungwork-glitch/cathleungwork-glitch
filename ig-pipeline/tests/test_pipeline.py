@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
@@ -9,6 +10,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from ig_pipeline.captions import DISCLAIMER, build_caption
+from ig_pipeline.cli import main
 from ig_pipeline.guardrails import lint_post, lint_text
 from ig_pipeline.playbook import load_playbook
 from ig_pipeline.publish import format_dry_run, select_for_live
@@ -186,6 +188,52 @@ class PublishTests(unittest.TestCase):
         self.assertNotIn("SECRETTOKENVALUE123", text)
         self.assertIn("Nothing was sent to Instagram.", text)
         self.assertIn("[redacted]", text)
+
+
+class LimitTests(unittest.TestCase):
+    def test_limit_five_writes_days_one_to_five_only(self) -> None:
+        posts, _ = load_playbook()
+        start = date(2026, 11, 26)
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            code = main(
+                [
+                    "generate",
+                    "--limit",
+                    "5",
+                    "--voice",
+                    "silent",
+                    "--start-date",
+                    start.isoformat(),
+                    "--output",
+                    tmp,
+                ]
+            )
+            self.assertEqual(code, 0)
+            day_dirs = sorted(path.name for path in folder.iterdir() if path.name.startswith("day-"))
+            self.assertEqual(day_dirs, ["day-01", "day-02", "day-03", "day-04", "day-05"])
+            for day in range(6, 15):
+                self.assertFalse((folder / f"day-{day:02}").exists())
+            self.assertGreater((folder / "day-01" / "reel.mp4").stat().st_size, 10_000)
+            self.assertTrue((folder / "day-02" / "reel.mp4").exists())
+            self.assertTrue((folder / "day-04" / "reel.mp4").exists())
+            self.assertTrue((folder / "day-05" / "reel.mp4").exists())
+            self.assertTrue((folder / "day-03" / "page-01.jpg").exists())
+            self.assertFalse((folder / "day-03" / "reel.mp4").exists())
+            manifest = json.loads((folder / "schedule.json").read_text(encoding="utf-8"))
+            self.assertEqual([item["day"] for item in manifest["posts"]], [1, 2, 3, 4, 5])
+            self.assertEqual(manifest["limit"], 5)
+            for post, record in zip(posts[:5], manifest["posts"]):
+                self.assertEqual(record["caption"], build_caption(post))
+                self.assertEqual(record["post_at"], post_at(start, post.day).isoformat(timespec="seconds"))
+                caption = (folder / f"day-{post.day:02}" / "caption.txt").read_text(encoding="utf-8")
+                self.assertEqual(caption, build_caption(post))
+
+    def test_limit_zero_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            code = main(["generate", "--limit", "0", "--voice", "silent", "--output", tmp])
+            self.assertEqual(code, 1)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
 
 
 class RenderTests(unittest.TestCase):

@@ -29,6 +29,12 @@ def main(argv: list[str] | None = None) -> int:
         help="edge is zh-HK-HiuMaanNeural with no key. azure uses AZURE_SPEECH_KEY. silent skips speech.",
     )
     gen.add_argument("--force", action="store_true", help="Overwrite a folder that already records a publish.")
+    gen.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Write only the first N posts, in day order. Days, captions, and times stay the same. Default: all 14.",
+    )
 
     pub = sub.add_parser("publish", help="Dry-run the Graph API schedule. Pass --live to post one due item.")
     pub.add_argument("--manifest", help="Path to schedule.json. Default: the only output/*/schedule.json.")
@@ -38,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "generate":
         start = date.fromisoformat(args.start_date) if args.start_date else tomorrow_hk()
         output = Path(args.output) if args.output else None
-        return generate(start, output, args.voice, args.force)
+        return generate(start, output, args.voice, args.force, args.limit)
 
     manifest = find_manifest(args.manifest, PIPELINE_ROOT)
     if args.live:

@@ -6,10 +6,11 @@
 cd ig-pipeline
 python3 -m pip install -r requirements.txt
 python3 -m ig_pipeline generate
+python3 -m ig_pipeline generate --limit 5
 python3 -m ig_pipeline publish
 ```
 
-`generate` 讀十四日稿，出粵語口播、9:16 黑底白字 Reels、4:5 圖文，同埋一個 `schedule.json`。單數日香港時間 12:20，雙數日 21:00。預設由聽日開始，`--start-date YYYY-MM-DD` 可以改。
+`generate` 讀十四日稿，出粵語口播、9:16 黑底白字 Reels、4:5 圖文，同埋一個 `schedule.json`。單數日香港時間 12:20，雙數日 21:00。預設由聽日開始，`--start-date YYYY-MM-DD` 可以改。唔加 `--limit` 就出全部 14 日。`--limit 5` 只出第 1 至第 5 日，順序、caption、出帖時間都同全日表一樣，唔會寫第 6 至第 14 日。檔案喺 `output/<開始日期>/day-01` 至 `day-05`，同埋嗰個資料夾入面嘅 `schedule.json`。
 
 `publish` 係乾跑，唔會出帖。未有 `IG_ACCESS_TOKEN` 同 `IG_USER_ID` 就停低，講明原因。有呢兩個環境變數都仍然係乾跑，要加 `--live` 先至會打官方 Instagram Graph API。每次 `--live` 最多出一條已經到時間嘅帖，而且距離上一條至少 12 小時。
 
