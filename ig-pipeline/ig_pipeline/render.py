@@ -38,6 +38,7 @@ def render_reel(
     duration_if_silent: float,
     silent: bool,
     hook: str,
+    durations: list[float] | None = None,
 ) -> None:
     if silent or audio is None:
         total = max(duration_if_silent, len(cards) * 2.5)
@@ -49,16 +50,17 @@ def render_reel(
     else:
         total = _duration(audio)
         comment = (
-            "Voice zh-HK-HiuMaanNeural. On-screen text is the playbook script. "
+            "On-screen text is Traditional Chinese. "
             "Not investment advice."
         )
         title = hook
-    durations = allocate_durations(total, len(cards))
+    if durations is None or len(durations) != len(cards):
+        durations = allocate_durations(total, len(cards))
     out.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="ig-reel-") as tmp_name:
         tmp = Path(tmp_name)
         segments = [
-            _render_card(tmp, index, text, duration)
+            _render_card(tmp, index, text, duration, len(cards))
             for index, (text, duration) in enumerate(zip(cards, durations, strict=True))
         ]
         silent_video = tmp / "video.mp4"
@@ -81,9 +83,9 @@ def render_carousel(pages: list[str], out_dir: Path) -> list[Path]:
     return paths
 
 
-def _render_card(tmp: Path, index: int, text: str, duration: float) -> Path:
+def _render_card(tmp: Path, index: int, text: str, duration: float, total: int) -> Path:
     image_path = tmp / f"card-{index:02}.png"
-    _paint_reel_card(text, image_path)
+    _paint_reel_card(text, image_path, index + 1, total)
     video = tmp / f"card-{index:02}.mp4"
     frames = max(1, round(duration * FPS))
     # Encode the still. No -vf, so a default Homebrew ffmpeg without drawtext works.
@@ -117,20 +119,41 @@ def _render_card(tmp: Path, index: int, text: str, duration: float) -> Path:
     return video
 
 
-def _paint_reel_card(text: str, path: Path) -> None:
-    image = Image.new("RGB", (REEL_W, REEL_H), "black")
+def _paint_reel_card(text: str, path: Path, index: int, total: int) -> None:
+    """Upper-middle caption plate. The line stays inside the safe area, fully drawn."""
+    image = Image.new("RGB", (REEL_W, REEL_H), (22, 24, 28))
     draw = ImageDraw.Draw(image)
-    max_width = REEL_W - 2 * REEL_SAFE_X
-    max_height = REEL_H - REEL_SAFE_TOP - REEL_SAFE_BOTTOM
+    label_font = load_font(30)
+    label = f"{index} / {total}"
+    label_width = label_font.getlength(label)
+    draw.text(((REEL_W - label_width) / 2, 96), label, font=label_font, fill=(190, 190, 190))
+
+    left = REEL_SAFE_X
+    right = REEL_W - REEL_SAFE_X
+    plate_width = right - left
+    pad = 40
+    max_width = plate_width - 2 * pad
+    max_height = 520
     size, lines, line_height = fit_text(text, max_width, max_height)
     font = load_font(size)
     block = line_height * len(lines)
-    top = REEL_SAFE_TOP + max(0, (max_height - block) // 2)
-    for line_index, line in enumerate(lines):
+    plate_height = block + pad * 2
+    plate_top = 360
+    plate_bottom = plate_top + plate_height
+    floor = REEL_H - REEL_SAFE_BOTTOM - 24
+    if plate_bottom > floor:
+        plate_top = max(REEL_SAFE_TOP, floor - plate_height)
+    draw.rounded_rectangle(
+        (left, plate_top, right, plate_top + plate_height),
+        radius=32,
+        fill=(8, 8, 8),
+    )
+    y = plate_top + pad
+    for line in lines:
         width = font.getlength(line)
-        x = (REEL_W - width) / 2
-        y = top + line_index * line_height
+        x = left + (plate_width - width) / 2
         draw.text((x, y), line, font=font, fill="white")
+        y += line_height
     image.save(path, format="PNG")
 
 

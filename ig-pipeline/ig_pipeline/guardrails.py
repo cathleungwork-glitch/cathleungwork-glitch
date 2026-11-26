@@ -8,6 +8,12 @@ ALLOWED_TAGS = ("#出糧", "#打工仔", "#信用卡", "#香港", "#人工智能
 
 # Buy/sell wording that the scripts already use in the negative ("唔係叫你買")
 # is allowed. These phrases are positive recommendations or out-of-niche topics.
+# Simplified forms that must not appear on screen or in the script.
+SIMPLIFIED = set(
+    "饭门国这说后来发为与时过还从开关长东车电话经买卖银账单费总数额户储转笔约现险务报证书网币结签条读听声让进见问请谢认识实际应该钱们样种类点体学习问题对会于没个"
+)
+
+
 FORBIDDEN = (
     "強積金",
     "mpf",
@@ -30,7 +36,10 @@ FORBIDDEN = (
 
 def lint_text(text: str) -> list[str]:
     folded = text.lower()
-    return [phrase for phrase in FORBIDDEN if phrase.lower() in folded]
+    issues = [phrase for phrase in FORBIDDEN if phrase.lower() in folded]
+    simplified = sorted({char for char in text if char in SIMPLIFIED})
+    issues.extend(f"simplified:{char}" for char in simplified)
+    return issues
 
 
 def lint_post(post: Post) -> list[str]:

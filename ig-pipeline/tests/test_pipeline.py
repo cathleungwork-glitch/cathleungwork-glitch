@@ -14,10 +14,13 @@ from unittest.mock import patch
 from ig_pipeline.captions import DISCLAIMER, build_caption
 from ig_pipeline.cli import main
 from ig_pipeline.guardrails import lint_post, lint_text
+from ig_pipeline.generate import _reel_voice
+from ig_pipeline.lines import reel_beats
 from ig_pipeline.playbook import load_playbook
 from ig_pipeline.publish import format_dry_run, select_for_live
+from ig_pipeline.recordings import line_durations
 from ig_pipeline.render import allocate_durations, render_carousel, render_reel
-from ig_pipeline.textfit import font_candidates, font_path, wrap_text
+from ig_pipeline.textfit import fit_text, font_candidates, font_path, load_font, wrap_text
 from ig_pipeline.schedule import HK, post_at
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,7 +38,7 @@ class PlaybookTests(unittest.TestCase):
                 "冇人叫你買入，亦都冇人叫你賣出。",
                 "年費七百二，回贈未計年費就唔算賺到。",
                 "你張卡 claim 咗，唔代表批咗。",
-                "出糧嗰晚先轉走，轉一餐午饭錢都得。",
+                "出糧嗰晚先轉走，轉一餐午飯錢都得。",
             ],
         )
 
@@ -70,7 +73,7 @@ class PlaybookTests(unittest.TestCase):
             [
                 "出糧同扣數一戶",
                 "唔轉走第二日當使",
-                "午饭六十蚊係例子",
+                "午飯六十蚊係例子",
                 "二十二日約一千三",
                 "出糧嗰晚轉第二戶",
             ],
@@ -329,7 +332,42 @@ class RenderTests(unittest.TestCase):
             stream = probe["streams"][0]
             self.assertEqual(stream["codec_name"], "h264")
             self.assertEqual((stream["width"], stream["height"]), (1080, 1920))
+            frame = folder / "frame.png"
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-ss",
+                    "0.2",
+                    "-i",
+                    str(reel),
+                    "-frames:v",
+                    "1",
+                    str(frame),
+                ],
+                check=True,
+            )
             from PIL import Image
+
+            with Image.open(frame) as opened:
+                self.assertEqual(opened.size, (1080, 1920))
+                pixels = opened.load()
+                bright_top = 0
+                bright_bottom = 0
+                for y in range(1920):
+                    for x in range(0, 1080, 4):
+                        red, green, blue = pixels[x, y][:3]
+                        if red + green + blue < 400:
+                            continue
+                        if y > int(1920 * 0.78):
+                            bright_bottom += 1
+                        else:
+                            bright_top += 1
+                self.assertGreater(bright_top, 40)
+                self.assertEqual(bright_bottom, 0)
 
             with Image.open(image) as opened:
                 opened.verify()
@@ -343,6 +381,72 @@ class RenderTests(unittest.TestCase):
         packed = wrap_text("有人用五成、三成、兩成。呢個係佢哋嘅分類，唔係你要跟嘅比例", 72, 880)
         for line in packed[1:]:
             self.assertNotIn(line[0], "，、。")
+
+    def test_fit_keeps_every_character_inside_the_width(self) -> None:
+        text = "股票有間公司，幣冇一張報表"
+        size, lines, _line_height = fit_text(text, 520, 280)
+        self.assertEqual("".join(lines), text)
+        font = load_font(size)
+        for line in lines:
+            self.assertLessEqual(font.getlength(line), 521)
+
+
+class TimingTests(unittest.TestCase):
+    def test_each_card_has_one_spoken_sentence(self) -> None:
+        posts, _checks = load_playbook()
+        for post in posts:
+            if post.kind != "reel":
+                continue
+            beats = reel_beats(post)
+            self.assertEqual([card for card, _line in beats], post.cards, post.day)
+            for card, line in beats:
+                self.assertTrue(line.endswith(("。", "！", "？")), line)
+                self.assertFalse(lint_text(card + line))
+
+    def test_simplified_character_is_rejected(self) -> None:
+        self.assertIn("simplified:饭", lint_text("午饭六十蚊"))
+
+    def test_a_dropped_recording_is_used_and_short_lines_stay_short(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            recordings = root / "recordings"
+            recordings.mkdir()
+            wav = recordings / "day-01.wav"
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    "anullsrc=r=48000:cl=stereo",
+                    "-t",
+                    "4",
+                    "-c:a",
+                    "pcm_s16le",
+                    str(wav),
+                ],
+                check=True,
+            )
+            lines = ["短。", "呢句長好多，要佔多啲時間。"]
+            durations = line_durations(wav, lines)
+            self.assertAlmostEqual(sum(durations), 4, delta=0.2)
+            self.assertGreater(durations[1], durations[0] * 2)
+
+            def explode(*_args, **_kwargs):
+                raise AssertionError("edge-tts should not run when a recording is present")
+
+            day_dir = root / "day"
+            day_dir.mkdir()
+            with patch("ig_pipeline.generate.synthesize_all", explode):
+                audio, used, engine, fallback = _reel_voice(1, day_dir, lines, "edge", recordings)
+            self.assertEqual(engine, "recording")
+            self.assertFalse(fallback)
+            self.assertIsNotNone(audio)
+            self.assertEqual(len(used), 2)
 
 
 if __name__ == "__main__":

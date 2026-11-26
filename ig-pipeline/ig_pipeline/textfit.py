@@ -43,9 +43,37 @@ def font_path() -> str:
     )
 
 
+def _face_index(path: str) -> int:
+    """Prefer a Traditional / Hong Kong face inside a .ttc. Index 0 of PingFang is often Simplified."""
+    best = 0
+    best_score = -10
+    for index in range(8):
+        try:
+            font = ImageFont.truetype(path, 40, index=index)
+        except OSError:
+            break
+        family, style = font.getname()
+        label = f"{family} {style}".lower()
+        score = 0
+        if any(token in label for token in ("hk", "hong kong", "tc", "traditional", "繁")):
+            score += 5
+        if any(token in label for token in ("sc", "simplified", "简", "gb")):
+            score -= 4
+        if score > best_score:
+            best_score = score
+            best = index
+    return best
+
+
+@lru_cache(maxsize=4)
+def _cached_face_index(path: str) -> int:
+    return _face_index(path)
+
+
 @lru_cache(maxsize=32)
 def load_font(size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(font_path(), size, index=0)
+    path = font_path()
+    return ImageFont.truetype(path, size, index=_cached_face_index(path))
 
 
 _PUNCT = set("，、。！？：；")
@@ -61,7 +89,7 @@ def wrap_text(text: str, size: int, max_width: int) -> list[str]:
         if not current or font.getlength(trial) <= max_width:
             current = trial
             continue
-        if char in _PUNCT:
+        if char in _PUNCT and font.getlength(trial) <= max_width:
             lines.append(trial)
             current = ""
             continue
@@ -94,11 +122,22 @@ def _hard_split(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> tupl
 
 
 def fit_text(text: str, max_width: int, max_height: int) -> tuple[int, list[str], int]:
-    for size in (104, 96, 88, 80, 72, 64, 56, 48):
+    for size in (84, 76, 68, 60, 54, 48, 42, 36):
         lines = wrap_text(text, size, max_width)
-        spacing = max(14, size // 5)
-        line_height = size + spacing
+        font = load_font(size)
+        if any(font.getlength(line) > max_width + 1 for line in lines):
+            continue
+        if "".join(lines) != text:
+            continue
+        spacing = max(12, size // 6)
+        line_height = _line_box(font) + spacing
         if lines and line_height * len(lines) <= max_height:
             return size, lines, line_height
-    lines = wrap_text(text, 48, max_width)
-    return 48, lines, 48 + 14
+    lines = wrap_text(text, 36, max_width)
+    font = load_font(36)
+    return 36, lines, _line_box(font) + 12
+
+
+def _line_box(font: ImageFont.FreeTypeFont) -> int:
+    box = font.getbbox("香港出糧午飯")
+    return max(1, box[3] - box[1])

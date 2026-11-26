@@ -1,4 +1,6 @@
 output/
+recordings/*
+!recordings/.gitkeep
 .venv/
 __pycache__/
 *.pyc

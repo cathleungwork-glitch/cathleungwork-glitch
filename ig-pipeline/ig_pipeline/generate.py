@@ -12,7 +12,16 @@ from PIL import Image
 
 from ig_pipeline.captions import build_caption
 from ig_pipeline.guardrails import lint_post
+from ig_pipeline.lines import reel_beats
 from ig_pipeline.playbook import CONTENT_PATH, SCREEN_DAYS, Post, load_playbook
+from ig_pipeline.recordings import (
+    concat_audio,
+    find_recording,
+    line_durations,
+    line_recordings,
+    probe_duration,
+    trim_leading,
+)
 from ig_pipeline.render import render_carousel, render_reel
 from ig_pipeline.schedule import HK, post_at
 from ig_pipeline.voice import VOICE_NAME, synthesize_all
@@ -53,26 +62,16 @@ def generate(
             )
             return 1
 
-    items: list[tuple[Path, str]] = []
     voice_dir = folder / "voice-check"
     voice_dir.mkdir(exist_ok=True)
-    for index, line in enumerate(checks, start=1):
-        items.append((voice_dir / f"{index:02}.mp3", line))
-    for post in posts:
-        if post.kind != "reel":
-            continue
-        day_dir = folder / f"day-{post.day:02}"
-        day_dir.mkdir(exist_ok=True)
-        items.append((day_dir / "voice.mp3", post.spoken))
-
-    print(f"Voice: {voice} ({VOICE_NAME})")
-    result = synthesize_all(items, voice)
+    check_items = [(voice_dir / f"{index:02}.mp3", line) for index, line in enumerate(checks, start=1)]
+    print(f"Voice fallback: {voice} ({VOICE_NAME})")
+    result = synthesize_all(check_items, voice)
     _write_listen_note(voice_dir, checks, result.engine, result.fallback, result.detail)
-    if result.fallback:
-        print("SILENT FALLBACK. Videos will render with a labeled silent audio track.")
+    if result.fallback and voice != "silent":
+        print("Voice-check audio was not generated.")
         print(result.detail)
-    else:
-        print(f"Voice ready via {result.engine} {result.voice}.")
+    recordings = PIPELINE_ROOT / "recordings"
 
     records = []
     for post in posts:
@@ -81,24 +80,33 @@ def generate(
         caption = build_caption(post)
         (day_dir / "caption.txt").write_text(caption, encoding="utf-8")
         when = post_at(start, post.day)
-        record = _record(post, caption, when, result.fallback, result.engine)
         if post.kind == "reel":
-            audio = day_dir / "voice.mp3"
-            print(f"Rendering day {post.day} reel ({len(post.cards)} cards)")
+            beats = reel_beats(post)
+            card_text = [card for card, _line in beats]
+            spoken_lines = [line for _card, line in beats]
+            audio, durations, engine, fallback = _reel_voice(
+                post.day, day_dir, spoken_lines, voice, recordings
+            )
+            record = _record(post, caption, when, fallback, engine)
+            print(f"Rendering day {post.day} reel ({len(card_text)} cards, {engine})")
             render_reel(
-                post.cards,
-                None if result.fallback else audio,
+                card_text,
+                audio,
                 day_dir / "reel.mp4",
                 float(post.seconds or 20),
-                result.fallback,
+                fallback or audio is None,
                 post.hook,
+                durations,
             )
-            (day_dir / "cards.txt").write_text("\n".join(post.cards) + "\n", encoding="utf-8")
+            (day_dir / "cards.txt").write_text("\n".join(card_text) + "\n", encoding="utf-8")
             (day_dir / "VOICE.txt").write_text(
-                "SILENT FALLBACK\n" if result.fallback else f"{result.engine} {VOICE_NAME}\n",
+                "SILENT FALLBACK\n"
+                if fallback or audio is None
+                else f"{engine}\nDrop a replacement in recordings/day-{post.day:02}.wav or .m4a\n",
                 encoding="utf-8",
             )
         else:
+            record = _record(post, caption, when, False, "none")
             print(f"Rendering day {post.day} carousel ({len(post.pages)} pages)")
             render_carousel(post.pages, day_dir)
             (day_dir / "pages.txt").write_text("\n".join(post.pages) + "\n", encoding="utf-8")
@@ -147,6 +155,46 @@ def generate(
         return 1
     _print_summary(folder, manifest)
     return 0
+
+
+def _reel_voice(
+    day: int,
+    day_dir: Path,
+    lines: list[str],
+    voice: str,
+    recordings: Path,
+) -> tuple[Path | None, list[float] | None, str, bool]:
+    if voice != "silent":
+        pieces = line_recordings(day, recordings, len(lines))
+        whole = None if pieces else find_recording(day, recordings)
+        if pieces or whole:
+            out = day_dir / "voice.m4a"
+            if pieces:
+                concat_audio(pieces, out)
+            else:
+                assert whole is not None
+                concat_audio([whole], out)
+            return out, line_durations(out, lines), "recording", False
+    if voice == "silent":
+        return None, None, "silent", True
+    clips: list[Path] = []
+    items = []
+    for index, line in enumerate(lines, start=1):
+        raw = day_dir / f"line-{index:02}.mp3"
+        items.append((raw, line))
+    spoken = synthesize_all(items, voice)
+    if spoken.fallback:
+        print(f"Day {day}: no recording in recordings/, and edge-tts failed. Silent track.")
+        print(spoken.detail)
+        return None, None, spoken.engine, True
+    for index in range(1, len(lines) + 1):
+        raw = day_dir / f"line-{index:02}.mp3"
+        cut = day_dir / f"line-{index:02}.m4a"
+        trim_leading(raw, cut)
+        clips.append(cut)
+    out = day_dir / "voice.m4a"
+    concat_audio(clips, out)
+    return out, [probe_duration(clip) for clip in clips], spoken.engine, False
 
 
 def _record(post: Post, caption: str, when: datetime, fallback: bool, engine: str) -> dict:
