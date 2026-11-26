@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from ig_pipeline.captions import DISCLAIMER, build_caption
 from ig_pipeline.cli import main
@@ -15,7 +16,7 @@ from ig_pipeline.guardrails import lint_post, lint_text
 from ig_pipeline.playbook import load_playbook
 from ig_pipeline.publish import format_dry_run, select_for_live
 from ig_pipeline.render import allocate_durations, render_carousel, render_reel
-from ig_pipeline.textfit import wrap_text
+from ig_pipeline.textfit import font_candidates, font_path, wrap_text
 from ig_pipeline.schedule import HK, post_at
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -234,6 +235,48 @@ class LimitTests(unittest.TestCase):
             code = main(["generate", "--limit", "0", "--voice", "silent", "--output", tmp])
             self.assertEqual(code, 1)
             self.assertEqual(list(Path(tmp).iterdir()), [])
+
+
+class FontTests(unittest.TestCase):
+    def test_candidates_try_mac_then_linux(self) -> None:
+        paths = [str(path) for path in font_candidates()]
+        self.assertEqual(
+            paths[:5],
+            [
+                "/System/Library/Fonts/PingFang.ttc",
+                "/System/Library/Fonts/STHeiti Medium.ttc",
+                "/System/Library/Fonts/Hiragino Sans GB.ttc",
+                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+                "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+            ],
+        )
+
+    def test_linux_font_still_wins_when_mac_fonts_are_absent(self) -> None:
+        self.assertEqual(font_path(), "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc")
+
+    def test_pingfang_is_preferred_when_it_exists(self) -> None:
+        pingfang = "/System/Library/Fonts/PingFang.ttc"
+
+        def is_file(self: Path) -> bool:
+            return str(self) == pingfang
+
+        with patch.object(Path, "is_file", is_file):
+            self.assertEqual(font_path(), pingfang)
+
+    def test_user_library_wqy_is_used_when_nothing_else_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fonts = Path(tmp) / "Library" / "Fonts"
+            fonts.mkdir(parents=True)
+            (fonts / "Arial.ttf").write_bytes(b"x")
+            wqy = fonts / "wqy-microhei.ttc"
+            wqy.write_bytes(b"x")
+
+            def is_file(self: Path) -> bool:
+                return self == wqy
+
+            with patch("ig_pipeline.textfit.Path.home", return_value=Path(tmp)):
+                with patch.object(Path, "is_file", is_file):
+                    self.assertEqual(font_path(), str(wqy))
 
 
 class RenderTests(unittest.TestCase):

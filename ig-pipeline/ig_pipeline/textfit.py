@@ -7,18 +7,39 @@ from pathlib import Path
 
 from PIL import ImageFont
 
-FONT_CANDIDATES = (
-    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
-    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+# Mac system fonts first, then the Linux paths this already used, then a
+# user-installed WenQuanYi file. No sudo and no /usr/share required.
+_MAC_FONTS = (
+    Path("/System/Library/Fonts/PingFang.ttc"),
+    Path("/System/Library/Fonts/STHeiti Medium.ttc"),
+    Path("/System/Library/Fonts/Hiragino Sans GB.ttc"),
+)
+_LINUX_FONTS = (
+    Path("/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"),
+    Path("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf"),
 )
 
 
+def font_candidates() -> tuple[Path, ...]:
+    return _MAC_FONTS + _LINUX_FONTS + tuple(_user_wqy_fonts())
+
+
+def _user_wqy_fonts() -> list[Path]:
+    folder = Path.home() / "Library" / "Fonts"
+    if not folder.is_dir():
+        return []
+    found = [path for path in folder.iterdir() if path.is_file() and "wqy" in path.name.lower()]
+    return sorted(found, key=lambda path: path.name.lower())
+
+
 def font_path() -> str:
-    for candidate in FONT_CANDIDATES:
-        if Path(candidate).exists():
-            return candidate
+    for candidate in font_candidates():
+        if candidate.is_file():
+            return str(candidate)
     raise SystemExit(
-        "No CJK font found. Install fonts-wqy-microhei (WenQuanYi Micro Hei)."
+        "No CJK font found. On macOS this looks for PingFang, STHeiti Medium, "
+        "or Hiragino Sans GB in /System/Library/Fonts, or a wqy file in ~/Library/Fonts. "
+        "On Linux it looks for WenQuanYi Micro Hei or Droid Sans Fallback."
     )
 
 
